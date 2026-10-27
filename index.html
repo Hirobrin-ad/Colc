@@ -1,270 +1,716 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>iPhone Calculator</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body {
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #000000;
-      color: #ffffff;
-      padding: 16px;
-      overflow: hidden;
-    }
-
-    .calculator {
-      width: 100%;
-      max-width: 340px;
-      padding: 20px 16px 24px 16px;
-      border-radius: 40px;
-      background-color: #000000;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-    }
-
-    .display-container {
-      width: 100%;
-      padding: 0 12px 16px 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      justify-content: flex-end;
-      min-height: 110px;
-    }
-
-    .display {
-      width: 100%;
-      background: transparent;
-      border: none;
-      color: #ffffff;
-      font-size: 64px;
-      font-weight: 300;
-      text-align: right;
-      outline: none;
-      letter-spacing: -1px;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-
-    .buttons {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-    }
-
-    button {
-      height: 68px;
-      width: 68px;
-      border-radius: 50%;
-      border: none;
-      font-size: 28px;
-      font-weight: 400;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: filter 0.2s ease, opacity 0.2s ease;
-    }
-
-    button:active {
-      filter: brightness(140%);
-    }
-
-    .btn-light-gray {
-      background-color: #a5a5a5;
-      color: #000000;
-    }
-
-    .btn-light-gray:active {
-      background-color: #d9d9d9;
-    }
-
-    .btn-dark-gray {
-      background-color: #333333;
-      color: #ffffff;
-    }
-
-    .btn-dark-gray:active {
-      background-color: #555555;
-    }
-
-    .btn-orange {
-      background-color: #ff9f0a;
-      color: #ffffff;
-      font-size: 32px;
-    }
-
-    .btn-orange.active {
-      background-color: #ffffff;
-      color: #ff9f0a;
-    }
-
-    .btn-zero {
-      grid-column: span 2;
-      width: 100%;
-      border-radius: 35px;
-      justify-content: flex-start;
-      padding-left: 26px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Универсальный Помощник: Калькулятор, Таймер, Секундомер</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        apple: {
+                            bg: '#000000',
+                            card: '#1c1c1e',
+                            btn: '#2c2c2e',
+                            btnHover: '#3a3a3c',
+                            accent: '#0a84ff',
+                            orange: '#ff9f0a',
+                            green: '#30d158',
+                            red: '#ff453a',
+                            text: '#f2f2f7',
+                            subtext: '#8e8e93'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Segoe UI', 'Roboto', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Tone.js for web audio synth sound -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        /* Smooth scale tap effect */
+        .btn-tap {
+            transition: transform 0.1s ease, background-color 0.15s ease;
+        }
+        .btn-tap:active {
+            transform: scale(0.94);
+        }
+        /* Circular SVG animation smooth setup */
+        circle {
+            transition: stroke-dashoffset 0.3s ease-out;
+        }
+    </style>
 </head>
-<body>
+<body class="bg-black text-apple-text min-h-screen font-sans flex flex-col justify-center items-center p-3 sm:p-6 antialiased selection:bg-apple-accent selection:text-white">
 
-  <div class="calculator">
-    <div class="display-container">
-      <input type="text" class="display" id="display" readonly value="0">
+    <!-- Main Container -->
+    <div class="w-full max-w-md bg-apple-card border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[680px] relative backdrop-blur-xl">
+        
+        <!-- Header / Navigation Tabs -->
+        <header class="p-3 border-b border-white/10 bg-black/40 backdrop-blur-md sticky top-0 z-20">
+            <nav class="grid grid-cols-3 gap-1 bg-apple-btn p-1 rounded-2xl relative" id="tabNav">
+                <button onclick="switchTab('calculator')" id="tab-calculator" class="tab-btn py-2 text-xs sm:text-sm font-medium rounded-xl transition-all duration-200 z-10 text-white bg-apple-accent shadow-md">
+                    Калькулятор
+                </button>
+                <button onclick="switchTab('timer')" id="tab-timer" class="tab-btn py-2 text-xs sm:text-sm font-medium rounded-xl transition-all duration-200 z-10 text-apple-subtext hover:text-white">
+                    Таймер
+                </button>
+                <button onclick="switchTab('stopwatch')" id="tab-stopwatch" class="tab-btn py-2 text-xs sm:text-sm font-medium rounded-xl transition-all duration-200 z-10 text-apple-subtext hover:text-white">
+                    Секундомер
+                </button>
+            </nav>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 relative overflow-hidden">
+            
+            <!-- SECTION 1: CALCULATOR -->
+            <section id="content-calculator" class="tab-content absolute inset-0 flex flex-col p-4 transition-all duration-300 transform opacity-100 translate-x-0">
+                <!-- Display Area -->
+                <div class="flex-1 flex flex-col justify-end text-right px-2 pb-3">
+                    <!-- History Display Toggle / Last Equation -->
+                    <div class="flex justify-between items-center mb-1">
+                        <button onclick="toggleCalcHistory()" class="text-xs text-apple-accent hover:underline flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>История</span>
+                        </button>
+                        <div id="calcHistoryPrev" class="text-xs text-apple-subtext overflow-hidden text-ellipsis whitespace-nowrap max-w-[200px] h-4"></div>
+                    </div>
+                    <!-- Current Output Display -->
+                    <div id="calcDisplay" class="text-4xl sm:text-5xl font-light tracking-tight text-white overflow-x-auto whitespace-nowrap scrollbar-none">0</div>
+                </div>
+
+                <!-- Keyboard Grid -->
+                <div class="grid grid-cols-4 gap-2.5 pt-2 border-t border-white/5">
+                    <!-- Row 1 -->
+                    <button onclick="calcClear()" class="btn-tap bg-gray-500/30 text-white hover:bg-gray-500/40 font-medium text-lg h-14 rounded-2xl">AC</button>
+                    <button onclick="calcBackspace()" class="btn-tap bg-gray-500/30 text-white hover:bg-gray-500/40 font-medium text-lg h-14 rounded-2xl flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414-6.414a2 2 0 011.414-.586H19a2 2 0 012 2v12a2 2 0 01-2 2H10.828a2 2 0 01-1.414-.586L3 12z"></path></svg>
+                    </button>
+                    <button onclick="calcPercent()" class="btn-tap bg-gray-500/30 text-white hover:bg-gray-500/40 font-medium text-lg h-14 rounded-2xl">%</button>
+                    <button onclick="calcOp('/')" class="btn-tap bg-apple-orange/90 text-white hover:bg-apple-orange font-medium text-xl h-14 rounded-2xl">÷</button>
+
+                    <!-- Row 2 -->
+                    <button onclick="calcNum('7')" class="btn-tap bg-apple-btn text-white hover:bg-apple-btnHover font-medium text-xl h-14 rounded-2xl">7</button>
+                    <button onclick="calcNum('8')" class="btn-tap bg-apple-btn text-white hover:bg-apple-btnHover font-medium text-xl h-14 rounded-2xl">8</button>
+                    <button onclick="calcNum('9')" class="btn-tap bg-apple-btn text-white hover:bg-apple-btnHover font-medium text-xl h-14 rounded-2xl">9</button>
+                    <button onclick="calcOp('*')" class="btn-tap bg-apple-orange/90 text-white hover:bg-apple-orange font-medium text-xl h-14 rounded-2xl">×</button>
+
+                    <!-- Row 3 -->
+                    <button onclick="calcNum('4')" class="btn-tap bg-apple-btn text-white hover:bg-apple-btnHover font-medium text-xl h-14 rounded-2xl">4</button>
+                    <button onclick="calcNum('5')" class="btn-tap bg-apple-btn text-white hover:bg-apple-btnHover font-medium text-xl h-14 rounded-2xl">5</button>
+                    <button onclick="calcNum('6')" class="btn-tap bg-apple-btn text-white hover:bg-apple-btnHover font-medium text-xl h-14 rounded-2xl">6</button>
+                    <button onclick="calcOp('-')" class="btn-tap bg-apple-orange/90 text-white hover:bg-apple-orange font-medium text-xl h-14 rounded-2xl">−</button>
+
+                    <!-- Row 4 -->
+                    <button onclick="calcNum('1')" class="btn-tap bg-apple-btn text-white hover:bg-apple-btnHover font-medium text-xl h-14 rounded-2xl">1</button>
+                    <button onclick="calcNum('2')" class="btn-tap bg-apple-btn text-white hover:bg-apple-btnHover font-medium text-xl h-14 rounded-2xl">2</button>
+                    <button onclick="calcNum('3')" class="btn-tap bg-apple-btn text-white hover:bg-apple-btnHover font-medium text-xl h-14 rounded-2xl">3</button>
+                    <button onclick="calcOp('+')" class="btn-tap bg-apple-orange/90 text-white hover:bg-apple-orange font-medium text-xl h-14 rounded-2xl">+</button>
+
+                    <!-- Row 5 -->
+                    <button onclick="calcNum('0')" class="btn-tap bg-apple-btn text-white hover:bg-apple-btnHover font-medium text-xl h-14 rounded-2xl col-span-2 text-left pl-6">0</button>
+                    <button onclick="calcDecimal()" class="btn-tap bg-apple-btn text-white hover:bg-apple-btnHover font-medium text-xl h-14 rounded-2xl">,</button>
+                    <button onclick="calcEquals()" class="btn-tap bg-apple-orange/90 text-white hover:bg-apple-orange font-medium text-xl h-14 rounded-2xl">=</button>
+                </div>
+
+                <!-- History Overlay Modal -->
+                <div id="calcHistoryModal" class="hidden absolute inset-0 bg-apple-card/95 backdrop-blur-md z-30 p-4 flex flex-col border-t border-white/10 animate-fade-in">
+                    <div class="flex justify-between items-center mb-3 pb-2 border-b border-white/10">
+                        <h3 class="font-semibold text-sm tracking-wide text-white">История вычислений</h3>
+                        <div class="flex gap-2">
+                            <button onclick="clearCalcHistory()" class="text-xs text-apple-red hover:underline">Очистить</button>
+                            <button onclick="toggleCalcHistory()" class="text-xs text-apple-subtext hover:text-white ml-2">Закрыть</button>
+                        </div>
+                    </div>
+                    <div id="calcHistoryList" class="flex-1 overflow-y-auto space-y-2 text-right pr-1">
+                        <p class="text-apple-subtext text-xs text-center py-8">История пуста</p>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- SECTION 2: TIMER -->
+            <section id="content-timer" class="tab-content absolute inset-0 flex flex-col p-4 opacity-0 pointer-events-none translate-x-8 transition-all duration-300">
+                <!-- Visual Progress Circle -->
+                <div class="relative w-52 h-52 mx-auto my-auto flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <!-- Background Circle -->
+                        <circle cx="50" cy="50" r="44" stroke="currentColor" stroke-width="4" class="text-apple-btn" fill="transparent" />
+                        <!-- Progress Circle -->
+                        <circle id="timerProgressRing" cx="50" cy="50" r="44" stroke="currentColor" stroke-width="4" class="text-apple-orange" fill="transparent" stroke-dasharray="276.46" stroke-dashoffset="0" stroke-linecap="round" />
+                    </svg>
+
+                    <!-- Time Input/Display Inside Ring -->
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <div id="timerDisplay" class="text-4xl font-light tracking-tight text-white font-mono">00:00:00</div>
+                        <span id="timerStatus" class="text-xs text-apple-subtext mt-1">Готов к запуску</span>
+                    </div>
+                </div>
+
+                <!-- Custom Inputs (When Paused/Reset) -->
+                <div id="timerInputContainer" class="grid grid-cols-3 gap-2 my-2 text-center">
+                    <div class="bg-apple-btn p-2 rounded-xl">
+                        <label class="block text-[10px] text-apple-subtext mb-1 uppercase">Часы</label>
+                        <input type="number" id="timerHours" min="0" max="99" value="0" class="w-full bg-transparent text-center text-lg font-semibold text-white focus:outline-none focus:text-apple-orange">
+                    </div>
+                    <div class="bg-apple-btn p-2 rounded-xl">
+                        <label class="block text-[10px] text-apple-subtext mb-1 uppercase">Минуты</label>
+                        <input type="number" id="timerMinutes" min="0" max="59" value="5" class="w-full bg-transparent text-center text-lg font-semibold text-white focus:outline-none focus:text-apple-orange">
+                    </div>
+                    <div class="bg-apple-btn p-2 rounded-xl">
+                        <label class="block text-[10px] text-apple-subtext mb-1 uppercase">Секунды</label>
+                        <input type="number" id="timerSeconds" min="0" max="59" value="0" class="w-full bg-transparent text-center text-lg font-semibold text-white focus:outline-none focus:text-apple-orange">
+                    </div>
+                </div>
+
+                <!-- Presets -->
+                <div class="grid grid-cols-4 gap-2 my-2">
+                    <button onclick="setTimerPreset(60)" class="btn-tap bg-apple-btn hover:bg-apple-btnHover text-xs text-white py-2 rounded-xl">1 мин</button>
+                    <button onclick="setTimerPreset(300)" class="btn-tap bg-apple-btn hover:bg-apple-btnHover text-xs text-white py-2 rounded-xl">5 мин</button>
+                    <button onclick="setTimerPreset(600)" class="btn-tap bg-apple-btn hover:bg-apple-btnHover text-xs text-white py-2 rounded-xl">10 мин</button>
+                    <button onclick="setTimerPreset(900)" class="btn-tap bg-apple-btn hover:bg-apple-btnHover text-xs text-white py-2 rounded-xl">15 мин</button>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="grid grid-cols-2 gap-3 mt-auto pt-2">
+                    <button id="timerResetBtn" onclick="resetTimer()" class="btn-tap bg-apple-btn hover:bg-apple-btnHover text-white py-3.5 rounded-2xl font-medium text-sm transition-colors">
+                        Сброс
+                    </button>
+                    <button id="timerStartBtn" onclick="toggleTimer()" class="btn-tap bg-apple-orange text-white py-3.5 rounded-2xl font-medium text-sm shadow-lg shadow-apple-orange/20 transition-colors">
+                        Старт
+                    </button>
+                </div>
+            </section>
+
+
+            <!-- SECTION 3: STOPWATCH -->
+            <section id="content-stopwatch" class="tab-content absolute inset-0 flex flex-col p-4 opacity-0 pointer-events-none translate-x-8 transition-all duration-300">
+                <!-- Large Digital Display -->
+                <div class="flex-1 flex flex-col items-center justify-center my-2">
+                    <div id="swDisplay" class="text-5xl sm:text-6xl font-extralight tracking-tight text-white font-mono">00:00,00</div>
+                    <div id="swSubDisplay" class="text-xs text-apple-subtext mt-1 font-mono h-4">Круг: 00:00,00</div>
+                </div>
+
+                <!-- Controls -->
+                <div class="grid grid-cols-2 gap-3 my-3">
+                    <button id="swLapBtn" onclick="handleSwLap()" disabled class="btn-tap bg-apple-btn text-white/40 py-3.5 rounded-2xl font-medium text-sm transition-colors">
+                        Круг
+                    </button>
+                    <button id="swStartBtn" onclick="toggleStopwatch()" class="btn-tap bg-apple-green text-white py-3.5 rounded-2xl font-medium text-sm shadow-lg shadow-apple-green/20 transition-colors">
+                        Старт
+                    </button>
+                </div>
+
+                <!-- Laps History -->
+                <div class="h-44 border-t border-white/10 pt-2 flex flex-col">
+                    <div class="flex justify-between text-xs text-apple-subtext px-2 pb-1 border-b border-white/5 font-medium">
+                        <span>Круг</span>
+                        <span>Время круга</span>
+                        <span>Всего</span>
+                    </div>
+                    <div id="swLapList" class="flex-1 overflow-y-auto space-y-1 mt-1 pr-1 font-mono text-sm">
+                        <p class="text-apple-subtext text-xs text-center py-6 font-sans">Отсутствуют записи кругов</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
     </div>
 
-    <div class="buttons">
-      <button class="btn-light-gray" id="clear-btn" onclick="handleClear()">AC</button>
-      <button class="btn-light-gray" onclick="handleToggleSign()">±</button>
-      <button class="btn-light-gray" onclick="handlePercent()">%</button>
-      <button class="btn-orange" id="op-divide" onclick="handleOperator('/')">÷</button>
+    <!-- AUDIO SYNTH / NOTIFICATION SCRIPT -->
+    <script>
+        // Tab Switcher with animation handling
+        function switchTab(tabName) {
+            const tabs = ['calculator', 'timer', 'stopwatch'];
+            
+            tabs.forEach(t => {
+                const navBtn = document.getElementById(`tab-${t}`);
+                const content = document.getElementById(`content-${t}`);
+                
+                if (t === tabName) {
+                    // Active Tab Style
+                    navBtn.className = "tab-btn py-2 text-xs sm:text-sm font-medium rounded-xl transition-all duration-200 z-10 text-white bg-apple-accent shadow-md";
+                    // Active Content Style
+                    content.classList.remove('opacity-0', 'pointer-events-none', 'translate-x-8', '-translate-x-8');
+                    content.classList.add('opacity-100', 'translate-x-0');
+                } else {
+                    // Inactive Tab Style
+                    navBtn.className = "tab-btn py-2 text-xs sm:text-sm font-medium rounded-xl transition-all duration-200 z-10 text-apple-subtext hover:text-white";
+                    // Inactive Content Style
+                    content.classList.remove('opacity-100', 'translate-x-0');
+                    content.classList.add('opacity-0', 'pointer-events-none', 'translate-x-8');
+                }
+            });
+        }
 
-      <button class="btn-dark-gray" onclick="handleDigit('7')">7</button>
-      <button class="btn-dark-gray" onclick="handleDigit('8')">8</button>
-      <button class="btn-dark-gray" onclick="handleDigit('9')">9</button>
-      <button class="btn-orange" id="op-multiply" onclick="handleOperator('*')">×</button>
+        // Play Tone notification when timer finishes
+        function playAlarmSound() {
+            try {
+                const synth = new Tone.Synth().toDestination();
+                const now = Tone.now();
+                synth.triggerAttackRelease("E5", "8n", now);
+                synth.triggerAttackRelease("B5", "8n", now + 0.15);
+                synth.triggerAttackRelease("E6", "4n", now + 0.3);
+            } catch (e) {
+                console.log("Audio playback failed:", e);
+            }
+        }
 
-      <button class="btn-dark-gray" onclick="handleDigit('4')">4</button>
-      <button class="btn-dark-gray" onclick="handleDigit('5')">5</button>
-      <button class="btn-dark-gray" onclick="handleDigit('6')">6</button>
-      <button class="btn-orange" id="op-subtract" onclick="handleOperator('-')">−</button>
 
-      <button class="btn-dark-gray" onclick="handleDigit('1')">1</button>
-      <button class="btn-dark-gray" onclick="handleDigit('2')">2</button>
-      <button class="btn-dark-gray" onclick="handleDigit('3')">3</button>
-      <button class="btn-orange" id="op-add" onclick="handleOperator('+')">+</button>
+        /* ==========================================================================
+           1. CALCULATOR LOGIC
+           ========================================================================== */
+        let calcCurrentVal = '0';
+        let calcPrevVal = '';
+        let calcOperation = null;
+        let calcResetOnNextInput = false;
+        let calcHistory = [];
 
-      <button class="btn-dark-gray btn-zero" onclick="handleDigit('0')">0</button>
-      <button class="btn-dark-gray" onclick="handleDecimal()">,</button>
-      <button class="btn-orange" onclick="handleEqual()">=</button>
-    </div>
-  </div>
+        const calcDisplay = document.getElementById('calcDisplay');
+        const calcHistoryPrev = document.getElementById('calcHistoryPrev');
+        const calcHistoryModal = document.getElementById('calcHistoryModal');
+        const calcHistoryList = document.getElementById('calcHistoryList');
 
-  <script>
-    const display = document.getElementById('display');
-    const clearBtn = document.getElementById('clear-btn');
+        function updateCalcDisplay() {
+            calcDisplay.innerText = calcCurrentVal.replace('.', ',');
+            if (calcOperation && calcPrevVal !== '') {
+                const opSymbol = calcOperation === '*' ? '×' : calcOperation === '/' ? '÷' : calcOperation;
+                calcHistoryPrev.innerText = `${calcPrevVal.replace('.', ',')} ${opSymbol}`;
+            } else {
+                calcHistoryPrev.innerText = '';
+            }
+        }
 
-    let currentValue = '0';
-    let previousValue = null;
-    let currentOperator = null;
-    let waitingForNextValue = false;
+        function calcNum(num) {
+            if (calcCurrentVal === '0' || calcResetOnNextInput) {
+                calcCurrentVal = num;
+                calcResetOnNextInput = false;
+            } else {
+                if (calcCurrentVal.length < 12) {
+                    calcCurrentVal += num;
+                }
+            }
+            updateCalcDisplay();
+        }
 
-    function updateDisplay() {
-      let formatted = currentValue.replace('.', ',');
-      if (formatted.length > 7) {
-        display.style.fontSize = '44px';
-      } else if (formatted.length > 5) {
-        display.style.fontSize = '52px';
-      } else {
-        display.style.fontSize = '64px';
-      }
-      display.value = formatted;
-      clearBtn.innerText = currentValue !== '0' ? 'C' : 'AC';
-    }
+        function calcDecimal() {
+            if (calcResetOnNextInput) {
+                calcCurrentVal = '0.';
+                calcResetOnNextInput = false;
+            } else if (!calcCurrentVal.includes('.')) {
+                calcCurrentVal += '.';
+            }
+            updateCalcDisplay();
+        }
 
-    function clearActiveOperators() {
-      document.querySelectorAll('.btn-orange').forEach(btn => btn.classList.remove('active'));
-    }
+        function calcClear() {
+            calcCurrentVal = '0';
+            calcPrevVal = '';
+            calcOperation = null;
+            calcResetOnNextInput = false;
+            updateCalcDisplay();
+        }
 
-    function handleDigit(digit) {
-      if (waitingForNextValue) {
-        currentValue = digit;
-        waitingForNextValue = false;
-      } else {
-        currentValue = currentValue === '0' ? digit : currentValue + digit;
-      }
-      clearActiveOperators();
-      updateDisplay();
-    }
+        function calcBackspace() {
+            if (calcResetOnNextInput) return;
+            if (calcCurrentVal.length > 1) {
+                calcCurrentVal = calcCurrentVal.slice(0, -1);
+            } else {
+                calcCurrentVal = '0';
+            }
+            updateCalcDisplay();
+        }
 
-    function handleDecimal() {
-      if (waitingForNextValue) {
-        currentValue = '0.';
-        waitingForNextValue = false;
-      } else if (!currentValue.includes('.')) {
-        currentValue += '.';
-      }
-      clearActiveOperators();
-      updateDisplay();
-    }
+        function calcPercent() {
+            let val = parseFloat(calcCurrentVal);
+            if (!isNaN(val)) {
+                calcCurrentVal = (val / 100).toString();
+                updateCalcDisplay();
+            }
+        }
 
-    function handleClear() {
-      currentValue = '0';
-      previousValue = null;
-      currentOperator = null;
-      waitingForNextValue = false;
-      clearActiveOperators();
-      updateDisplay();
-    }
+        function calcOp(op) {
+            if (calcOperation !== null && !calcResetOnNextInput) {
+                calcEquals();
+            }
+            calcPrevVal = calcCurrentVal;
+            calcOperation = op;
+            calcResetOnNextInput = true;
+            updateCalcDisplay();
+        }
 
-    function handleToggleSign() {
-      if (currentValue === '0') return;
-      currentValue = (parseFloat(currentValue) * -1).toString();
-      updateDisplay();
-    }
+        function calcEquals() {
+            if (calcOperation === null || calcPrevVal === '') return;
 
-    function handlePercent() {
-      if (currentValue === '0') return;
-      currentValue = (parseFloat(currentValue) / 100).toString();
-      updateDisplay();
-    }
+            let prev = parseFloat(calcPrevVal);
+            let current = parseFloat(calcCurrentVal);
+            let result = 0;
 
-    function handleOperator(op) {
-      clearActiveOperators();
-      const opMap = { '/': 'op-divide', '*': 'op-multiply', '-': 'op-subtract', '+': 'op-add' };
-      document.getElementById(opMap[op])?.classList.add('active');
+            switch (calcOperation) {
+                case '+': result = prev + current; break;
+                case '-': result = prev - current; break;
+                case '*': result = prev * current; break;
+                case '/': 
+                    result = current === 0 ? 'Ошибка' : prev / current; 
+                    break;
+            }
 
-      if (currentOperator && !waitingForNextValue) {
-        calculate();
-      }
+            if (result !== 'Ошибка') {
+                // Round to avoid floating point issues
+                result = Math.round(result * 100000000) / 100000000;
+                const opSymbol = calcOperation === '*' ? '×' : calcOperation === '/' ? '÷' : calcOperation;
+                
+                // Add to history
+                calcHistory.unshift({
+                    eq: `${calcPrevVal.replace('.', ',')} ${opSymbol} ${calcCurrentVal.replace('.', ',')}`,
+                    res: result.toString().replace('.', ',')
+                });
+                renderCalcHistory();
+            }
 
-      previousValue = currentValue;
-      currentOperator = op;
-      waitingForNextValue = true;
-    }
+            calcCurrentVal = result.toString();
+            calcOperation = null;
+            calcPrevVal = '';
+            calcResetOnNextInput = true;
+            updateCalcDisplay();
+        }
 
-    function calculate() {
-      if (previousValue === null || currentOperator === null) return;
-      const prev = parseFloat(previousValue);
-      const current = parseFloat(currentValue);
-      let result = 0;
+        function toggleCalcHistory() {
+            calcHistoryModal.classList.toggle('hidden');
+        }
 
-      switch (currentOperator) {
-        case '+': result = prev + current; break;
-        case '-': result = prev - current; break;
-        case '*': result = prev * current; break;
-        case '/': result = current !== 0 ? prev / current : 'Ошибка'; break;
-      }
+        function renderCalcHistory() {
+            if (calcHistory.length === 0) {
+                calcHistoryList.innerHTML = `<p class="text-apple-subtext text-xs text-center py-8">История пуста</p>`;
+                return;
+            }
+            calcHistoryList.innerHTML = calcHistory.map(item => `
+                <div class="bg-apple-btn/50 p-2 rounded-xl text-xs border border-white/5">
+                    <div class="text-apple-subtext">${item.eq} =</div>
+                    <div class="text-sm font-semibold text-apple-accent mt-0.5">${item.res}</div>
+                </div>
+            `).join('');
+        }
 
-      currentValue = result === 'Ошибка' ? 'Ошибка' : Number(result.toFixed(8)).toString();
-      previousValue = null;
-      currentOperator = null;
-    }
+        function clearCalcHistory() {
+            calcHistory = [];
+            renderCalcHistory();
+        }
 
-    function handleEqual() {
-      clearActiveOperators();
-      if (!currentOperator) return;
-      calculate();
-      waitingForNextValue = true;
-      updateDisplay();
-    }
-  </script>
+        // Calculator Keyboard Listener
+        document.addEventListener('keydown', (e) => {
+            // Only trigger if Calculator tab is active
+            const calcContent = document.getElementById('content-calculator');
+            if (calcContent.classList.contains('opacity-0')) return;
 
+            if (e.key >= '0' && e.key <= '9') calcNum(e.key);
+            else if (e.key === '.' || e.key === ',') calcDecimal();
+            else if (e.key === '+') calcOp('+');
+            else if (e.key === '-') calcOp('-');
+            else if (e.key === '*') calcOp('*');
+            else if (e.key === '/') { e.preventDefault(); calcOp('/'); }
+            else if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); calcEquals(); }
+            else if (e.key === 'Backspace') calcBackspace();
+            else if (e.key === 'Escape') calcClear();
+        });
+
+
+        /* ==========================================================================
+           2. TIMER LOGIC
+           ========================================================================== */
+        let timerInterval = null;
+        let timerTotalSeconds = 300; // Default 5 mins
+        let timerRemainingSeconds = 300;
+        let timerIsRunning = false;
+
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerStatus = document.getElementById('timerStatus');
+        const timerProgressRing = document.getElementById('timerProgressRing');
+        const timerStartBtn = document.getElementById('timerStartBtn');
+        const timerInputContainer = document.getElementById('timerInputContainer');
+
+        const totalCircumference = 2 * Math.PI * 44; // r=44
+
+        function formatTimerTime(sec) {
+            const h = Math.floor(sec / 3600);
+            const m = Math.floor((sec % 3600) / 60);
+            const s = sec % 60;
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimerUI() {
+            timerDisplay.innerText = formatTimerTime(timerRemainingSeconds);
+            
+            // Progress Ring
+            const progress = timerTotalSeconds > 0 ? (timerRemainingSeconds / timerTotalSeconds) : 0;
+            const offset = totalCircumference - (progress * totalCircumference);
+            timerProgressRing.style.strokeDashoffset = offset;
+        }
+
+        function setTimerPreset(seconds) {
+            if (timerIsRunning) pauseTimer();
+            timerTotalSeconds = seconds;
+            timerRemainingSeconds = seconds;
+            
+            // Sync inputs
+            document.getElementById('timerHours').value = Math.floor(seconds / 3600);
+            document.getElementById('timerMinutes').value = Math.floor((seconds % 3600) / 60);
+            document.getElementById('timerSeconds').value = seconds % 60;
+
+            timerStatus.innerText = "Готов к запуску";
+            updateTimerUI();
+        }
+
+        function readTimerInputs() {
+            const h = parseInt(document.getElementById('timerHours').value) || 0;
+            const m = parseInt(document.getElementById('timerMinutes').value) || 0;
+            const s = parseInt(document.getElementById('timerSeconds').value) || 0;
+            return (h * 3600) + (m * 60) + s;
+        }
+
+        function toggleTimer() {
+            if (timerIsRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        }
+
+        function startTimer() {
+            if (!timerIsRunning) {
+                // If starting fresh or changed input
+                if (timerRemainingSeconds === timerTotalSeconds || timerRemainingSeconds === 0) {
+                    const customSec = readTimerInputs();
+                    if (customSec <= 0) return;
+                    timerTotalSeconds = customSec;
+                    timerRemainingSeconds = customSec;
+                }
+
+                Tone.start(); // Enable audio context on gesture
+                timerIsRunning = true;
+                timerStartBtn.innerText = "Пауза";
+                timerStartBtn.className = "btn-tap bg-apple-orange/80 hover:bg-apple-orange text-white py-3.5 rounded-2xl font-medium text-sm transition-colors";
+                timerStatus.innerText = "Идет отсчет...";
+                timerInputContainer.classList.add('opacity-40', 'pointer-events-none');
+
+                timerInterval = setInterval(() => {
+                    if (timerRemainingSeconds > 0) {
+                        timerRemainingSeconds--;
+                        updateTimerUI();
+                    } else {
+                        finishTimer();
+                    }
+                }, 1000);
+            }
+        }
+
+        function pauseTimer() {
+            if (timerIsRunning) {
+                clearInterval(timerInterval);
+                timerIsRunning = false;
+                timerStartBtn.innerText = "Продолжить";
+                timerStartBtn.className = "btn-tap bg-apple-green text-white py-3.5 rounded-2xl font-medium text-sm shadow-lg shadow-apple-green/20 transition-colors";
+                timerStatus.innerText = "На паузе";
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerIsRunning = false;
+            const customSec = readTimerInputs();
+            timerTotalSeconds = customSec > 0 ? customSec : 300;
+            timerRemainingSeconds = timerTotalSeconds;
+            
+            timerStartBtn.innerText = "Старт";
+            timerStartBtn.className = "btn-tap bg-apple-orange text-white py-3.5 rounded-2xl font-medium text-sm shadow-lg shadow-apple-orange/20 transition-colors";
+            timerStatus.innerText = "Готов к запуску";
+            timerInputContainer.classList.remove('opacity-40', 'pointer-events-none');
+            
+            updateTimerUI();
+        }
+
+        function finishTimer() {
+            clearInterval(timerInterval);
+            timerIsRunning = false;
+            timerRemainingSeconds = 0;
+            updateTimerUI();
+            
+            timerStartBtn.innerText = "Старт";
+            timerStartBtn.className = "btn-tap bg-apple-orange text-white py-3.5 rounded-2xl font-medium text-sm shadow-lg shadow-apple-orange/20 transition-colors";
+            timerStatus.innerText = "Время истекло!";
+            timerInputContainer.classList.remove('opacity-40', 'pointer-events-none');
+            
+            playAlarmSound();
+        }
+
+        // Initialize timer inputs change handlers
+        ['timerHours', 'timerMinutes', 'timerSeconds'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                if (!timerIsRunning) {
+                    const sec = readTimerInputs();
+                    timerTotalSeconds = sec;
+                    timerRemainingSeconds = sec;
+                    updateTimerUI();
+                }
+            });
+        });
+
+
+        /* ==========================================================================
+           3. STOPWATCH LOGIC
+           ========================================================================== */
+        let swStartTime = 0;
+        let swElapsedTime = 0;
+        let swLapStartTime = 0;
+        let swInterval = null;
+        let swIsRunning = false;
+        let swLaps = [];
+
+        const swDisplay = document.getElementById('swDisplay');
+        const swSubDisplay = document.getElementById('swSubDisplay');
+        const swStartBtn = document.getElementById('swStartBtn');
+        const swLapBtn = document.getElementById('swLapBtn');
+        const swLapList = document.getElementById('swLapList');
+
+        function formatStopwatchTime(ms) {
+            const totalSec = Math.floor(ms / 1000);
+            const m = Math.floor(totalSec / 60);
+            const s = totalSec % 60;
+            const cs = Math.floor((ms % 1000) / 10); // Centiseconds
+
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')},${cs.toString().padStart(2, '0')}`;
+        }
+
+        function updateStopwatchUI() {
+            const now = Date.now();
+            const currentTotal = swElapsedTime + (swIsRunning ? (now - swStartTime) : 0);
+            const currentLap = swIsRunning ? (now - swLapStartTime) : 0;
+
+            swDisplay.innerText = formatStopwatchTime(currentTotal);
+            if (swLaps.length > 0 && swIsRunning) {
+                swSubDisplay.innerText = `Круг: ${formatStopwatchTime(currentLap)}`;
+            } else {
+                swSubDisplay.innerText = swLaps.length > 0 ? `Всего кругов: ${swLaps.length}` : `Круг: 00:00,00`;
+            }
+        }
+
+        function toggleStopwatch() {
+            if (swIsRunning) {
+                // Pause
+                clearInterval(swInterval);
+                swElapsedTime += Date.now() - swStartTime;
+                swIsRunning = false;
+
+                swStartBtn.innerText = "Продолжить";
+                swStartBtn.className = "btn-tap bg-apple-green text-white py-3.5 rounded-2xl font-medium text-sm shadow-lg shadow-apple-green/20 transition-colors";
+                
+                swLapBtn.innerText = "Сброс";
+                swLapBtn.disabled = false;
+                swLapBtn.className = "btn-tap bg-apple-btn text-white py-3.5 rounded-2xl font-medium text-sm transition-colors";
+            } else {
+                // Start
+                swStartTime = Date.now();
+                if (swLaps.length === 0 && swElapsedTime === 0) {
+                    swLapStartTime = swStartTime;
+                } else {
+                    swLapStartTime = Date.now() - (swElapsedTime - (swLaps.reduce((acc, l) => acc + l.lapTime, 0)));
+                }
+
+                swIsRunning = true;
+                swInterval = setInterval(updateStopwatchUI, 20);
+
+                swStartBtn.innerText = "Стоп";
+                swStartBtn.className = "btn-tap bg-apple-red text-white py-3.5 rounded-2xl font-medium text-sm shadow-lg shadow-apple-red/20 transition-colors";
+
+                swLapBtn.innerText = "Круг";
+                swLapBtn.disabled = false;
+                swLapBtn.className = "btn-tap bg-apple-btn hover:bg-apple-btnHover text-white py-3.5 rounded-2xl font-medium text-sm transition-colors";
+            }
+        }
+
+        function handleSwLap() {
+            if (swIsRunning) {
+                // Add Lap
+                const now = Date.now();
+                const totalMs = swElapsedTime + (now - swStartTime);
+                const lapMs = now - swLapStartTime;
+
+                swLaps.unshift({
+                    id: swLaps.length + 1,
+                    lapTime: lapMs,
+                    totalTime: totalMs
+                });
+
+                swLapStartTime = now;
+                renderSwLaps();
+            } else {
+                // Reset Stopwatch
+                resetStopwatch();
+            }
+        }
+
+        function resetStopwatch() {
+            clearInterval(swInterval);
+            swElapsedTime = 0;
+            swStartTime = 0;
+            swLapStartTime = 0;
+            swIsRunning = false;
+            swLaps = [];
+
+            swDisplay.innerText = "00:00,00";
+            swSubDisplay.innerText = "Круг: 00:00,00";
+
+            swStartBtn.innerText = "Старт";
+            swStartBtn.className = "btn-tap bg-apple-green text-white py-3.5 rounded-2xl font-medium text-sm shadow-lg shadow-apple-green/20 transition-colors";
+
+            swLapBtn.innerText = "Круг";
+            swLapBtn.disabled = true;
+            swLapBtn.className = "btn-tap bg-apple-btn text-white/40 py-3.5 rounded-2xl font-medium text-sm transition-colors";
+
+            renderSwLaps();
+        }
+
+        function renderSwLaps() {
+            if (swLaps.length === 0) {
+                swLapList.innerHTML = `<p class="text-apple-subtext text-xs text-center py-6 font-sans">Отсутствуют записи кругов</p>`;
+                return;
+            }
+
+            swLapList.innerHTML = swLaps.map(lap => `
+                <div class="flex justify-between items-center py-1.5 px-2 border-b border-white/5 text-xs">
+                    <span class="text-apple-subtext">Круг ${lap.id}</span>
+                    <span class="text-white font-medium">${formatStopwatchTime(lap.lapTime)}</span>
+                    <span class="text-apple-subtext">${formatStopwatchTime(lap.totalTime)}</span>
+                </div>
+            `).join('');
+        }
+
+        // Initialize UI Displays
+        updateTimerUI();
+    </script>
 </body>
 </html>
