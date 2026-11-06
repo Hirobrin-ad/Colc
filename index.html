@@ -6,7 +6,7 @@
 <title>Откроется в Новый год</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,800&family=Montserrat:wght@700&display=swap" rel="stylesheet">
 <style>
 :root{
   color-scheme: dark;
@@ -15,6 +15,7 @@
   --glow:rgba(255,190,60,.55);
   --snow:#ffffff; --drift:#f2f7ff; --drift2:#d6e4fa;
   --tree:#0f5a45; --tree2:#0b4a38; --trunk:#5a3a22; --wire:#1a1a1a;
+  --c1:#22458a; --c2:#1b3a75; --c3:#15305f; --c4:#102650;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
@@ -25,6 +26,7 @@
     --glow:rgba(255,180,50,.5);
     --snow:#e6efff; --drift:#c9d8f0; --drift2:#a9bddf;
     --tree:#0a3d30; --tree2:#082f26;
+    --c1:#10244d; --c2:#0c1d40; --c3:#0a1834; --c4:#07122a;
   }
 }
 :root[data-theme="dark"]{
@@ -32,6 +34,7 @@
   --glow:rgba(255,180,50,.5);
   --snow:#e6efff; --drift:#c9d8f0; --drift2:#a9bddf;
   --tree:#0a3d30; --tree2:#082f26;
+  --c1:#10244d; --c2:#0c1d40; --c3:#0a1834; --c4:#07122a;
 }
 html,body{height:100%;margin:0}
 body{
@@ -53,8 +56,8 @@ body{
 
 .stage{
   position:relative;z-index:2;height:100%;
-  display:flex;align-items:center;justify-content:center;
-  padding:0 5vw 12vh;box-sizing:border-box;text-align:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4vh 5vw 14vh;box-sizing:border-box;text-align:center;
 }
 .title{
   margin:0;font-weight:800;font-style:italic;line-height:1.12;
@@ -77,6 +80,33 @@ body{
 .tree .lt{animation:glow 1.6s ease-in-out infinite}
 .drift{position:absolute;left:0;bottom:0;width:100%;height:50%}
 
+.count{display:flex;justify-content:center;gap:clamp(8px,2.4vw,22px);margin-top:clamp(1.2rem,4vh,2.4rem)}
+.unit{display:flex;flex-direction:column;align-items:center;gap:.6rem}
+.card{
+  position:relative;perspective:500px;
+  width:clamp(58px,15vw,118px);height:clamp(74px,19vw,150px);
+  font-family:"Montserrat","Trebuchet MS",system-ui,sans-serif;font-weight:700;
+  font-size:clamp(2.1rem,8.4vw,4.4rem);font-variant-numeric:tabular-nums;
+}
+.card::before{content:"";position:absolute;inset:0;border-radius:10px;box-shadow:0 8px 18px rgba(0,0,0,.45)}
+.half{position:absolute;left:0;width:100%;height:50%;overflow:hidden;color:var(--g1)}
+.half.top{top:0;border-radius:10px 10px 0 0;background:linear-gradient(180deg,var(--c1),var(--c2))}
+.half.bot{bottom:0;border-radius:0 0 10px 10px;background:linear-gradient(180deg,var(--c3),var(--c4))}
+.half span{position:absolute;left:0;right:0;height:200%;display:flex;align-items:center;justify-content:center}
+.half.top span{top:0}
+.half.bot span{bottom:0}
+.flap{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.flap.front{transform-origin:50% 100%;z-index:3}
+.flap.back{transform-origin:50% 0;transform:rotateX(90deg);z-index:2}
+.go .flap.front{animation:fold .3s ease-in forwards}
+.go .flap.back{animation:unfold .3s .3s ease-out forwards}
+@keyframes fold{from{transform:rotateX(0)}to{transform:rotateX(-90deg)}}
+@keyframes unfold{from{transform:rotateX(90deg)}to{transform:rotateX(0)}}
+.seam{position:absolute;left:0;right:0;top:calc(50% - 1px);height:2px;background:rgba(0,0,0,.6);z-index:5}
+.lab{font-family:"Montserrat","Trebuchet MS",system-ui,sans-serif;font-weight:700;font-size:clamp(.7rem,2.4vw,.95rem);color:var(--g1);text-shadow:0 1px 6px rgba(0,0,0,.5)}
+.hap{margin:1rem 0 0;font-style:italic;font-weight:800;font-size:clamp(1.4rem,5vw,2.4rem);color:var(--g1);text-shadow:0 0 18px var(--glow)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
 @media (prefers-reduced-motion: reduce){
   .title,.stars span,.snow i,.garland circle.bulb,.tree .lt{animation:none}
 }
@@ -89,6 +119,9 @@ body{
 
 <main class="stage">
   <h1 class="title">Откроется<br>в Новый год</h1>
+  <div class="count" id="count" aria-hidden="true"></div>
+  <p class="hap" id="hap" hidden>С Новым годом!</p>
+  <span class="sr" id="sr" role="timer"></span>
 </main>
 
 <div class="scene" aria-hidden="true">
@@ -172,6 +205,44 @@ body{
   }
   document.getElementById('treeL').innerHTML=tree();
   document.getElementById('treeR').innerHTML=tree();
+
+  /* Обратный отсчёт до 1 января 2027, 00:00 по времени посетителя */
+  var target=new Date(2027,0,1,0,0,0).getTime(),
+      names=[['день','дня','дней'],['час','часа','часов'],['минута','минуты','минут'],['секунда','секунды','секунд']],
+      reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches,
+      box=document.getElementById('count'),cards=[],labs=[],cur=[];
+  function plural(n,f){var a=n%100,b=n%10;if(a>10&&a<20)return f[2];if(b===1)return f[0];if(b>1&&b<5)return f[1];return f[2];}
+  function pad(n){return n<10?'0'+n:''+n;}
+  names.forEach(function(){
+    var u=document.createElement('div');u.className='unit';
+    u.innerHTML='<div class="card"><div class="half top"><span>00</span></div><div class="half bot"><span>00</span></div><div class="half top flap front"><span>00</span></div><div class="half bot flap back"><span>00</span></div><div class="seam"></div></div><div class="lab"></div>';
+    box.appendChild(u);cards.push(u.firstChild);labs.push(u.lastChild);cur.push('00');
+  });
+  function setAll(c,t){Array.prototype.forEach.call(c.querySelectorAll('span'),function(x){x.textContent=t;});}
+  function flip(i,v){
+    if(cur[i]===v)return;
+    var c=cards[i],sp=c.querySelectorAll('span');
+    if(reduce){setAll(c,v);cur[i]=v;return;}
+    if(c._t){clearTimeout(c._t);sp[1].textContent=cur[i];sp[2].textContent=cur[i];}
+    sp[0].textContent=v;sp[2].textContent=cur[i];sp[3].textContent=v;
+    c.classList.remove('go');void c.offsetWidth;c.classList.add('go');
+    cur[i]=v;
+    c._t=setTimeout(function(){sp[1].textContent=v;sp[2].textContent=v;c.classList.remove('go');c._t=0;},620);
+  }
+  function tick(first){
+    var d=Math.max(0,target-Date.now()),s=Math.floor(d/1000),
+        v=[Math.floor(s/86400),Math.floor(s%86400/3600),Math.floor(s%3600/60),s%60],txt=[];
+    v.forEach(function(n,i){
+      var t=pad(n);
+      if(first){setAll(cards[i],t);cur[i]=t;}else{flip(i,t);}
+      labs[i].textContent=plural(n,names[i]);
+      txt.push(n+' '+plural(n,names[i]));
+    });
+    document.getElementById('sr').textContent='До Нового года: '+txt.join(', ');
+    if(d<=0){document.getElementById('hap').hidden=false;return;}
+    setTimeout(tick,1000-Date.now()%1000);
+  }
+  tick(true);
 })();
 </script>
 </body>
